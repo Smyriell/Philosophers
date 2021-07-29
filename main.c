@@ -6,16 +6,10 @@
 /*   By: smyriell <smyriell@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/06/26 16:19:06 by smyriell          #+#    #+#             */
-/*   Updated: 2021/07/28 20:25:58 by smyriell         ###   ########.fr       */
+/*   Updated: 2021/07/29 03:19:33 by smyriell         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include <unistd.h>
-#include <stdlib.h>
-#include <pthread.h>
-#include <time.h>
-#include <stdio.h>
-#include <semaphore.h>
 #include "philo.h"
 
 /*
@@ -150,19 +144,21 @@ int	ft_data_valid(char **argv)
 
 void	ft_struct_init(char **argv, t_data *input_data)
 {
-	input_data->philo_nbr = argv[1];
-	input_data->dying_time = argv[2];
-	input_data->eating_time = argv[3];
-	input_data->sleeping_time = argv[4];
+	input_data->philo_nbr = (int)ft_atoi(argv[1]);
+	input_data->time_to_die = (int)ft_atoi(argv[2]);
+	input_data->eating_time = (int)ft_atoi(argv[3]);
+	input_data->sleeping_time = (int)ft_atoi(argv[4]);
 	if (argv[5])
-		input_data->meal_times = argv[5];
+		input_data->times_to_eat = (int)ft_atoi(argv[5]);
 	else
-		input_data->meal_times = -1;
+		input_data->times_to_eat = -1;
+	input_data->start_time = current_time();
 }
 
 int	start_philo(char **argv)
 {
 	t_data *input_data;
+	
 
 	if (ft_data_valid(argv))
 		return (1);
@@ -170,8 +166,19 @@ int	start_philo(char **argv)
 	if (!input_data)
 		return (ft_str_error("Error! Memmory allocation\n"));
 	ft_struct_init(argv, input_data);
+
+	
+	// printf("Init sucsess\n");
 	//
-	//monitor
+	// monitor:
+	// while (1)
+	// {
+	// 	usleep(1000);
+	// 	if someone is dead
+	// 		break;
+	// 	if (input_data->number_to_eat == 0)
+	// 		break;
+	// }
 	//
 	return (0);
 }
@@ -184,10 +191,7 @@ int	main(int argc, char **argv)
 			return (1);
 	}
 	else
-	{
-		ft_str_error("Error! Wrong number of arguments\n");
-		return (1);
-	}
+		return (ft_str_error("Error! Wrong number of arguments\n"));
 	return (0);
 }
 

@@ -6,11 +6,19 @@
 /*   By: smyriell <smyriell@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/07/14 20:36:43 by smyriell          #+#    #+#             */
-/*   Updated: 2021/07/28 20:18:00 by smyriell         ###   ########.fr       */
+/*   Updated: 2021/07/28 23:49:27 by smyriell         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "philo.h"
+
+long int	current_time(void)
+{
+	static struct timeval	time;
+
+	gettimeofday(&time, NULL);
+	return ((time.tv_sec * 1000) + (time.tv_usec / 1000));
+}
 
 int ft_strlen(char *str)
 {
@@ -31,32 +39,31 @@ int ft_str_error(char *str)
 	return (1);
 }
 
-int		ft_is_digit(char **mas)
+int		ft_is_digit(char **arr)
 {
 	int i;
 	int j;
 
-	i = 1;
+	i = 0;
 
-	while (mas[i])
+	while (arr[++i])
 	{
 		j = -1;
-		while (mas[i][++j])
+		while (arr[i][++j])
 		{
-			if (mas[i][j] < '0' || mas[i][j] > '9')
+			if (arr[i][j] < '0' || arr[i][j] > '9')
 				return (ft_str_error("Error! There are only digits are avaliable in arguments\n"));
 		}
-		if (ft_atoi(mas[i]) == -1)
+		if ((int)ft_atoi(arr[i]) == -1)
 			return (1);
-		i++;
 	}
 	return (0);
 }
 
-unsigned int	ft_atoi(const char *s)
+long long	ft_atoi(const char *s)
 {
-	int				i;
-	unsigned int	numb;
+	int			i;
+	long long	numb;
 
 	i = 0;
 	numb = 0;
@@ -65,7 +72,7 @@ unsigned int	ft_atoi(const char *s)
 		numb = numb * 10 + s[i] - 48;
 		i++;
 	}
-	if (numb > 2147483647)
+	if (numb > 9223372036854775807)
 	{
 		ft_str_error("Error! An integer overflow in arguments\n");
 		return (-1);
