@@ -6,7 +6,7 @@
 /*   By: smyriell <smyriell@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/06/26 16:19:06 by smyriell          #+#    #+#             */
-/*   Updated: 2021/07/29 03:19:33 by smyriell         ###   ########.fr       */
+/*   Updated: 2021/07/31 02:10:12 by smyriell         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,7 @@
 number_of_philosophers = number_of_forks
 
 number_of_times_each_philosopher_must_eat: argument is optional, if all
-philosophers eat at least ’number_of_times_each_philosopher_must_eat’ the
+philosophers eat at least ’number_of_times_one_philosopher_must_eat’ the
 simulation will stop. If not specified, the simulation will stop only at the death
 of a philosopher.
 
@@ -55,7 +55,7 @@ number_of_philosophers
 time_to_die 
 time_to_eat
 time_to_sleep 
-optional: number_of_times_each_philosopher_must_eat
+optional: number_of_times_one_philosopher_must_eat
 
 
 External functs:
@@ -75,13 +75,13 @@ gettimeofday,
 - pthread_mutex_unlock
 
 
-One fork between each philosopher, therefore if they are multiple philosophers, there
-will be a fork at the right and the left of each philosopher.
+One fork between one philosopher, therefore if they are multiple philosophers, there
+will be a fork at the right and the left of one philosopher.
 
 To avoid philosophers duplicating forks, you should protect the forks state with a
-mutex for each of them!
+mutex for one of them!
 
-Each philosopher should be a thread
+one philosopher should be a thread
 
 
 Типы данных:
@@ -99,13 +99,13 @@ pthread_rwlockattr_t: атрибуты этого мьютекса;
 pthread_spinlock_t: спинлок;
 */
 
-void*	test()
-{
-	printf("Test from thread\n");
-	sleep(3);
-	printf("ending\n");
-	return (0);
-}
+// void*	test()
+// {
+// 	printf("Test from thread\n");
+// 	sleep(3);
+// 	printf("ending\n");
+// 	return (0);
+// }
 
 // int	main(int argc, char **argv)
 // {
@@ -123,10 +123,25 @@ void*	test()
 // 	return (0);
 // }
 
+void	*ft_monitor(void *input_data)
+{
+	t_data	*data_input;
+
+	data_input = (t_data *)input_data;
+	while (1)
+	{
+		if (check_dead_phil(data_input))
+			break ;
+		if (data_input->times_to_eat_optional != -1 && each_phil_fullfed(data_input))
+			break ;
+	}
+	return (NULL);
+}
+
 int	ft_data_valid(char **argv)
 {
-	int	i;
-	unsigned int	n;	
+	int			i;
+	long int	n;	
 
 	i = -1;
 	if (ft_is_digit(argv))
@@ -142,44 +157,124 @@ int	ft_data_valid(char **argv)
 	return (0);
 }
 
-void	ft_struct_init(char **argv, t_data *input_data)
+void	common_struct_init(char **argv, t_data *input_data)
 {
-	input_data->philo_nbr = (int)ft_atoi(argv[1]);
-	input_data->time_to_die = (int)ft_atoi(argv[2]);
+	input_data->philo_nbr = ft_atoi(argv[1]);
+	input_data->time_to_die = (int)ft_atoi(argv[2]);// ft_long_atoi!
 	input_data->eating_time = (int)ft_atoi(argv[3]);
 	input_data->sleeping_time = (int)ft_atoi(argv[4]);
 	if (argv[5])
-		input_data->times_to_eat = (int)ft_atoi(argv[5]);
+		input_data->times_to_eat_optional = ft_atoi(argv[5]);
 	else
-		input_data->times_to_eat = -1;
-	input_data->start_time = current_time();
+		input_data->times_to_eat_optional = -1;
+	input_data->start_time = get_time();
+}
+
+int	each_phil_arr_init(t_data *input_data)
+{
+	int	i;
+
+	input_data->one_phil = (t_phil *)malloc(input_data->philo_nbr * sizeof(t_phil));
+	if (!input_data->one_phil)
+		return (ft_str_error("Error! Memmory allocation\n"));
+	i = -1;
+	while (++i < input_data->philo_nbr)
+	{
+		input_data->one_phil[i].id = i;
+		input_data->one_phil[i].numb_of_meal = 0;
+		input_data->one_phil[i].left_fork = i;
+		input_data->one_phil[i].right_fork = (i + 1) % input_data->philo_nbr;
+		input_data->one_phil[i].dead = 0;
+	}
+	return (0);
+}
+
+int	mutex_init(t_data *input_data)
+{
+	int	i;
+
+	input_data->forks = (pthread_mutex_t *)malloc(input_data->philo_nbr * sizeof(pthread_mutex_t));
+	if (!input_data->forks)
+		return (ft_str_error("Error! Memmory allocation\n"));
+	i = -1;
+	while (++i < input_data->philo_nbr)
+	{
+		if (pthread_mutex_init(&input_data->forks[i], NULL))
+			return (ft_str_error("Error! Mutex was not inited\n"));
+	}
+	return (0);
+}
+
+void *ft_launching(void *one_of_philo)
+{
+	t_phil	*one_phil;
+	
+	one_phil = (t_phil *)one_of_philo;
+	one_phil->begin = get_time();
+	one_phil->finished = one_phil->begin;
+	while (1)
+	{
+		// phil_sleep(one_phil);
+		// usleep(1000000);
+		// if (one_phil->dead)
+		// 	break;
+		action_data_output(one_phil, "is sleeping\n");
+		printf("PHILO %d slept\n", one_phil->id);
+		usleep(200000);
+		printf("PHILO %d usleep sleep\n", one_phil->id);
+		action_data_output(one_phil, "is thinking\n");
+		printf("PHILO %d thought\n", one_phil->id);
+		phil_eat(one_phil);
+		// action_data_output(one_phil, "is eating\n");
+		// usleep(one_phil->input_data->eating_time * 1000);
+		printf("PHILO %d is done\n", one_phil->id);
+	}
+	return (NULL);
+}
+
+int	threads(t_data *input_data)
+{
+	int	i;
+
+	input_data->phil_thread = (pthread_t *)malloc(input_data->philo_nbr * sizeof(pthread_t));
+	if (!input_data->phil_thread)
+		return (ft_str_error("Error! Memmory allocation\n"));
+	i = -1;
+	while (++i < input_data->philo_nbr)
+	{
+		if (pthread_create(&input_data->phil_thread[i], NULL, ft_launching, (void *)&input_data->one_phil[i]))
+			return (ft_str_error("Error! Thread was not created\n"));
+		// usleep(10000);
+	}
+	i = -1;
+	while (++i < input_data->philo_nbr)
+	{
+		if (pthread_detach(input_data->phil_thread[i]))
+			return (ft_str_error("Error! Thread was not detached\n"));
+	}
+	return (0);
 }
 
 int	start_philo(char **argv)
 {
-	t_data *input_data;
-	
+	t_data	*input_data;
+	t_phil	*one_phil;
 
 	if (ft_data_valid(argv))
 		return (1);
 	input_data = (t_data *)malloc(sizeof(t_data));
 	if (!input_data)
 		return (ft_str_error("Error! Memmory allocation\n"));
-	ft_struct_init(argv, input_data);
-
-	
-	// printf("Init sucsess\n");
-	//
-	// monitor:
-	// while (1)
-	// {
-	// 	usleep(1000);
-	// 	if someone is dead
-	// 		break;
-	// 	if (input_data->number_to_eat == 0)
-	// 		break;
-	// }
-	//
+	common_struct_init(argv, input_data);
+	if (mutex_init(input_data) || each_phil_arr_init(input_data))
+		return (1);
+	if (threads(input_data))
+		return (1);
+	if (pthread_create(&input_data->monitor_thread, NULL, ft_monitor, (void *)input_data))
+			return (ft_str_error("Error! Monitor_thread was not created\n"));
+	pthread_join(input_data->monitor_thread, NULL);
+	// monitor(input_data);
+	// make free of all mallocs and mutex
 	return (0);
 }
 

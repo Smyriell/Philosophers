@@ -6,18 +6,18 @@
 /*   By: smyriell <smyriell@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/07/14 20:36:43 by smyriell          #+#    #+#             */
-/*   Updated: 2021/07/28 23:49:27 by smyriell         ###   ########.fr       */
+/*   Updated: 2021/07/31 00:00:48 by smyriell         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "philo.h"
 
-long int	current_time(void)
+time_t	get_time(void)
 {
 	static struct timeval	time;
 
 	gettimeofday(&time, NULL);
-	return ((time.tv_sec * 1000) + (time.tv_usec / 1000));
+	return ((long long)(time.tv_sec * 1000) + (time.tv_usec / 1000));
 }
 
 int ft_strlen(char *str)
@@ -60,10 +60,10 @@ int		ft_is_digit(char **arr)
 	return (0);
 }
 
-long long	ft_atoi(const char *s)
+int	ft_atoi(const char *s) // проверить тут что лучше возвращать
 {
 	int			i;
-	long long	numb;
+	long int	numb;
 
 	i = 0;
 	numb = 0;
@@ -74,7 +74,7 @@ long long	ft_atoi(const char *s)
 	}
 	if (numb > 9223372036854775807)
 	{
-		ft_str_error("Error! An integer overflow in arguments\n");
+		ft_str_error("Error! An overflow in arguments\n");
 		return (-1);
 	}
 	else
