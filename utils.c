@@ -6,7 +6,7 @@
 /*   By: smyriell <smyriell@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/07/14 20:36:43 by smyriell          #+#    #+#             */
-/*   Updated: 2021/07/31 00:00:48 by smyriell         ###   ########.fr       */
+/*   Updated: 2021/08/05 19:55:17 by smyriell         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,8 +62,29 @@ int		ft_is_digit(char **arr)
 
 int	ft_atoi(const char *s) // проверить тут что лучше возвращать
 {
-	int			i;
-	long int	numb;
+	int	i;
+	unsigned int	numb;
+
+	i = 0;
+	numb = 0;
+	while (s[i] >= 48 && s[i] <= 57)
+	{
+		numb = numb * 10 + s[i] - 48;
+		i++;
+	}
+	if (numb > 2147483647)
+	{
+		ft_str_error("Error! An overflow in arguments\n");
+		return (-1);
+	}
+	else
+		return (numb);
+}
+
+long long	ft_atoi_long(const char *s) // проверить тут что лучше возвращать
+{
+	int					i;
+	unsigned long long	numb;
 
 	i = 0;
 	numb = 0;

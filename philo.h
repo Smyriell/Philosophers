@@ -6,7 +6,7 @@
 /*   By: smyriell <smyriell@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/07/14 20:22:39 by smyriell          #+#    #+#             */
-/*   Updated: 2021/07/31 02:09:28 by smyriell         ###   ########.fr       */
+/*   Updated: 2021/08/05 21:45:14 by smyriell         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,8 +44,10 @@ typedef struct  	s_data
 	int				times_to_eat_optional;
 	t_phil			*one_phil;
 	pthread_t		*phil_thread;
-	pthread_t		monitor_thread;
+	pthread_t		*monitor_thread;
 	pthread_mutex_t	*forks;
+	pthread_mutex_t monitor_lock;
+	pthread_mutex_t	print_lock;
 }               	t_data;
 
 
@@ -56,10 +58,11 @@ int			ft_strlen(char *str);
 int			ft_str_error(char *str);
 int			ft_is_digit(char **arr);
 int			ft_atoi(const char *s);
+long long	ft_atoi_long(const char *s);
 
 //*  phil_actions  *//
 
-void	phil_eat(t_phil *one_phil);
+int    phil_eat(t_phil *one_phil);
 void	action_data_output(t_phil *one_phil, char *message);
 void	bury_phil(t_data *input_data);
 int		check_dead_phil(t_data *input_data);

@@ -6,7 +6,7 @@
 /*   By: smyriell <smyriell@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/06/26 16:19:06 by smyriell          #+#    #+#             */
-/*   Updated: 2021/07/31 02:10:12 by smyriell         ###   ########.fr       */
+/*   Updated: 2021/08/05 21:47:18 by smyriell         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -130,10 +130,15 @@ void	*ft_monitor(void *input_data)
 	data_input = (t_data *)input_data;
 	while (1)
 	{
+		pthread_mutex_lock(&data_input->monitor_lock);
 		if (check_dead_phil(data_input))
 			break ;
 		if (data_input->times_to_eat_optional != -1 && each_phil_fullfed(data_input))
+		{
+			printf("times to eat for each philo = %d, everybody is full\n", data_input->times_to_eat_optional);
 			break ;
+		}
+		pthread_mutex_unlock(&data_input->monitor_lock);
 	}
 	return (NULL);
 }
@@ -160,9 +165,9 @@ int	ft_data_valid(char **argv)
 void	common_struct_init(char **argv, t_data *input_data)
 {
 	input_data->philo_nbr = ft_atoi(argv[1]);
-	input_data->time_to_die = (int)ft_atoi(argv[2]);// ft_long_atoi!
-	input_data->eating_time = (int)ft_atoi(argv[3]);
-	input_data->sleeping_time = (int)ft_atoi(argv[4]);
+	input_data->time_to_die = ft_atoi_long(argv[2]);
+	input_data->eating_time = ft_atoi_long(argv[3]);
+	input_data->sleeping_time = ft_atoi_long(argv[4]);
 	if (argv[5])
 		input_data->times_to_eat_optional = ft_atoi(argv[5]);
 	else
@@ -185,6 +190,7 @@ int	each_phil_arr_init(t_data *input_data)
 		input_data->one_phil[i].left_fork = i;
 		input_data->one_phil[i].right_fork = (i + 1) % input_data->philo_nbr;
 		input_data->one_phil[i].dead = 0;
+		input_data->one_phil[i].input_data = input_data;
 	}
 	return (0);
 }
@@ -200,8 +206,13 @@ int	mutex_init(t_data *input_data)
 	while (++i < input_data->philo_nbr)
 	{
 		if (pthread_mutex_init(&input_data->forks[i], NULL))
-			return (ft_str_error("Error! Mutex was not inited\n"));
+			return (ft_str_error("Error! Mutex for philo was not inited\n"));
 	}
+	if (pthread_mutex_init(&input_data->monitor_lock, NULL))
+			return (ft_str_error("Error! Mutex for monitor was not inited\n"));
+	if (pthread_mutex_init(&input_data->print_lock, NULL))
+			return (ft_str_error("Error! Mutex for monitor was not inited\n"));
+
 	return (0);
 }
 
@@ -214,20 +225,20 @@ void *ft_launching(void *one_of_philo)
 	one_phil->finished = one_phil->begin;
 	while (1)
 	{
-		// phil_sleep(one_phil);
-		// usleep(1000000);
-		// if (one_phil->dead)
-		// 	break;
+		if (one_phil->dead)
+		{
+			printf("phil[%d] is dead\n", one_phil->id + 1);
+        	break ;
+		}
+		if (one_phil->input_data->times_to_eat_optional != -1 && one_phil->numb_of_meal == one_phil->input_data->times_to_eat_optional)
+			break ;
 		action_data_output(one_phil, "is sleeping\n");
-		printf("PHILO %d slept\n", one_phil->id);
-		usleep(200000);
-		printf("PHILO %d usleep sleep\n", one_phil->id);
+		usleep(one_phil->input_data->sleeping_time * 1000);
 		action_data_output(one_phil, "is thinking\n");
-		printf("PHILO %d thought\n", one_phil->id);
-		phil_eat(one_phil);
-		// action_data_output(one_phil, "is eating\n");
-		// usleep(one_phil->input_data->eating_time * 1000);
-		printf("PHILO %d is done\n", one_phil->id);
+		if (phil_eat(one_phil))
+			break ;
+		one_phil->finished = get_time();
+		// printf("PHILO %d cycle done\n", one_phil->id + 1);
 	}
 	return (NULL);
 }
@@ -244,13 +255,14 @@ int	threads(t_data *input_data)
 	{
 		if (pthread_create(&input_data->phil_thread[i], NULL, ft_launching, (void *)&input_data->one_phil[i]))
 			return (ft_str_error("Error! Thread was not created\n"));
-		// usleep(10000);
+		// printf("thread  [%d] is created\n", i);
 	}
 	i = -1;
 	while (++i < input_data->philo_nbr)
 	{
 		if (pthread_detach(input_data->phil_thread[i]))
 			return (ft_str_error("Error! Thread was not detached\n"));
+		// printf("thread  [%d] is detached\n", i);
 	}
 	return (0);
 }
@@ -265,15 +277,16 @@ int	start_philo(char **argv)
 	input_data = (t_data *)malloc(sizeof(t_data));
 	if (!input_data)
 		return (ft_str_error("Error! Memmory allocation\n"));
+	input_data->monitor_thread = (pthread_t *)malloc(sizeof(pthread_t));// protect
 	common_struct_init(argv, input_data);
 	if (mutex_init(input_data) || each_phil_arr_init(input_data))
 		return (1);
 	if (threads(input_data))
 		return (1);
-	if (pthread_create(&input_data->monitor_thread, NULL, ft_monitor, (void *)input_data))
+	if (pthread_create(input_data->monitor_thread, NULL, ft_monitor, (void *)input_data))
 			return (ft_str_error("Error! Monitor_thread was not created\n"));
-	pthread_join(input_data->monitor_thread, NULL);
-	// monitor(input_data);
+	pthread_join(*input_data->monitor_thread, NULL);
+	printf("!! monitor is finished\n");
 	// make free of all mallocs and mutex
 	return (0);
 }
