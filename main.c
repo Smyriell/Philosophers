@@ -6,7 +6,7 @@
 /*   By: smyriell <smyriell@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/06/26 16:19:06 by smyriell          #+#    #+#             */
-/*   Updated: 2021/08/05 21:47:18 by smyriell         ###   ########.fr       */
+/*   Updated: 2021/08/08 00:41:09 by smyriell         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -130,15 +130,14 @@ void	*ft_monitor(void *input_data)
 	data_input = (t_data *)input_data;
 	while (1)
 	{
-		pthread_mutex_lock(&data_input->monitor_lock);
 		if (check_dead_phil(data_input))
 			break ;
 		if (data_input->times_to_eat_optional != -1 && each_phil_fullfed(data_input))
 		{
+			pthread_mutex_lock(&data_input->print_lock);
 			printf("times to eat for each philo = %d, everybody is full\n", data_input->times_to_eat_optional);
 			break ;
 		}
-		pthread_mutex_unlock(&data_input->monitor_lock);
 	}
 	return (NULL);
 }
@@ -146,14 +145,17 @@ void	*ft_monitor(void *input_data)
 int	ft_data_valid(char **argv)
 {
 	int			i;
-	long int	n;	
+	long long	n;	
 
-	i = -1;
+	i = 0;
 	if (ft_is_digit(argv))
 		return (ft_str_error("Invalid format of argument\n"));
 	while (argv[++i])
 	{
-		n = ft_atoi(argv[i]);
+		if (i == 1 || i == 5)
+			n = ft_atoi(argv[i]);
+		else
+			n = ft_atoi_long(argv[i]);
 		if (i == 1 && n < 1)
 			return (ft_str_error("Error! Invalid number of Philosophers\n"));
 		if (n < 60 && (i == 2 || i == 3 || i == 4))
@@ -195,24 +197,12 @@ int	each_phil_arr_init(t_data *input_data)
 	return (0);
 }
 
-int	mutex_init(t_data *input_data)
+int	ft_check_phil_condition(t_phil *one_phil)
 {
-	int	i;
-
-	input_data->forks = (pthread_mutex_t *)malloc(input_data->philo_nbr * sizeof(pthread_mutex_t));
-	if (!input_data->forks)
-		return (ft_str_error("Error! Memmory allocation\n"));
-	i = -1;
-	while (++i < input_data->philo_nbr)
-	{
-		if (pthread_mutex_init(&input_data->forks[i], NULL))
-			return (ft_str_error("Error! Mutex for philo was not inited\n"));
-	}
-	if (pthread_mutex_init(&input_data->monitor_lock, NULL))
-			return (ft_str_error("Error! Mutex for monitor was not inited\n"));
-	if (pthread_mutex_init(&input_data->print_lock, NULL))
-			return (ft_str_error("Error! Mutex for monitor was not inited\n"));
-
+	if (one_phil->dead)
+		return (1);
+	if (one_phil->numb_of_meal == one_phil->input_data->times_to_eat_optional)
+		return (1);
 	return (0);
 }
 
@@ -222,23 +212,20 @@ void *ft_launching(void *one_of_philo)
 	
 	one_phil = (t_phil *)one_of_philo;
 	one_phil->begin = get_time();
-	one_phil->finished = one_phil->begin;
+	one_phil->time_to_die = get_time() + one_phil->input_data->time_to_die;
 	while (1)
 	{
-		if (one_phil->dead)
-		{
-			printf("phil[%d] is dead\n", one_phil->id + 1);
-        	break ;
-		}
-		if (one_phil->input_data->times_to_eat_optional != -1 && one_phil->numb_of_meal == one_phil->input_data->times_to_eat_optional)
-			break ;
-		action_data_output(one_phil, "is sleeping\n");
-		usleep(one_phil->input_data->sleeping_time * 1000);
-		action_data_output(one_phil, "is thinking\n");
-		if (phil_eat(one_phil))
-			break ;
-		one_phil->finished = get_time();
-		// printf("PHILO %d cycle done\n", one_phil->id + 1);
+		if (ft_check_phil_condition(one_phil))
+			break;
+		phil_eat(one_phil);
+		// one_phil->finished = get_time();
+		if (ft_check_phil_condition(one_phil))
+			break;
+		print_message(one_phil, "is sleeping\n");
+		ft_usleep(one_phil->input_data->sleeping_time);
+		if (ft_check_phil_condition(one_phil))
+			break;
+		print_message(one_phil, "is thinking\n");
 	}
 	return (NULL);
 }
@@ -250,19 +237,14 @@ int	threads(t_data *input_data)
 	input_data->phil_thread = (pthread_t *)malloc(input_data->philo_nbr * sizeof(pthread_t));
 	if (!input_data->phil_thread)
 		return (ft_str_error("Error! Memmory allocation\n"));
-	i = -1;
-	while (++i < input_data->philo_nbr)
+	i = 0;
+	while (i < input_data->philo_nbr)
 	{
 		if (pthread_create(&input_data->phil_thread[i], NULL, ft_launching, (void *)&input_data->one_phil[i]))
 			return (ft_str_error("Error! Thread was not created\n"));
-		// printf("thread  [%d] is created\n", i);
-	}
-	i = -1;
-	while (++i < input_data->philo_nbr)
-	{
 		if (pthread_detach(input_data->phil_thread[i]))
 			return (ft_str_error("Error! Thread was not detached\n"));
-		// printf("thread  [%d] is detached\n", i);
+		i = i + 1;
 	}
 	return (0);
 }
@@ -271,6 +253,7 @@ int	start_philo(char **argv)
 {
 	t_data	*input_data;
 	t_phil	*one_phil;
+	// int	i;
 
 	if (ft_data_valid(argv))
 		return (1);
@@ -287,6 +270,10 @@ int	start_philo(char **argv)
 			return (ft_str_error("Error! Monitor_thread was not created\n"));
 	pthread_join(*input_data->monitor_thread, NULL);
 	printf("!! monitor is finished\n");
+	// i = -1;
+	// while (i++ < input_data->philo_nbr)
+	// 	pthread_mutex_destroy(&input_data->forks[i]);
+	pthread_mutex_destroy(&input_data->print_lock);
 	// make free of all mallocs and mutex
 	return (0);
 }

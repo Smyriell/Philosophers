@@ -6,7 +6,7 @@
 /*   By: smyriell <smyriell@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/07/14 20:36:43 by smyriell          #+#    #+#             */
-/*   Updated: 2021/08/05 19:55:17 by smyriell         ###   ########.fr       */
+/*   Updated: 2021/08/07 22:29:42 by smyriell         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,20 @@ time_t	get_time(void)
 
 	gettimeofday(&time, NULL);
 	return ((long long)(time.tv_sec * 1000) + (time.tv_usec / 1000));
+}
+
+void	ft_usleep(long long interval)
+{
+	time_t			now;
+	time_t			stop;
+
+	stop = get_time() + interval;
+	now = get_time();
+	while (now < stop)
+	{
+		usleep(50);
+		now = get_time();
+	}
 }
 
 int ft_strlen(char *str)
@@ -44,18 +58,20 @@ int		ft_is_digit(char **arr)
 	int i;
 	int j;
 
-	i = 0;
-
-	while (arr[++i])
+	i = 1;
+	while (arr[i])
 	{
 		j = -1;
 		while (arr[i][++j])
 		{
+			if (j == 0 && arr[i][j] == '-')
+				return (ft_str_error("Error! There are only positiv numbers are avaliable in arguments\n"));
 			if (arr[i][j] < '0' || arr[i][j] > '9')
 				return (ft_str_error("Error! There are only digits are avaliable in arguments\n"));
 		}
-		if ((int)ft_atoi(arr[i]) == -1)
+		if ((i == 1 && ft_atoi(arr[i]) == -1) || (i > 1 && ft_atoi_long(arr[i]) == -1))
 			return (1);
+		i++;
 	}
 	return (0);
 }
