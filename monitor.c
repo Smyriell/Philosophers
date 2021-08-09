@@ -6,7 +6,7 @@
 /*   By: smyriell <smyriell@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/08/09 18:15:17 by smyriell          #+#    #+#             */
-/*   Updated: 2021/08/09 18:55:48 by smyriell         ###   ########.fr       */
+/*   Updated: 2021/08/09 19:07:57 by smyriell         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,14 +16,14 @@ int	each_phil_fullfed(t_data *input_data)
 {
 	int	i;
 	int	full_phil;
-	
+
 	i = -1;
 	full_phil = 0;
 	while (++i < input_data->philo_nbr)
 	{
 		if (input_data->one_phil[i].numb_of_meal == \
 									input_data->times_to_eat_optional)
-		full_phil++;
+			full_phil++;
 	}
 	if (full_phil == input_data->philo_nbr)
 		return (1);
@@ -34,7 +34,7 @@ int	each_phil_fullfed(t_data *input_data)
 int	check_starved_phil(t_data *input_data)
 {
 	int	i;
-	
+
 	i = -1;
 	while (++i < input_data->philo_nbr)
 	{

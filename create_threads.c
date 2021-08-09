@@ -6,7 +6,7 @@
 /*   By: smyriell <smyriell@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/08/09 18:24:53 by smyriell          #+#    #+#             */
-/*   Updated: 2021/08/09 18:55:20 by smyriell         ###   ########.fr       */
+/*   Updated: 2021/08/10 00:05:48 by smyriell         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,22 +19,22 @@ void	phil_eat(t_phil *one_phil)
 		pthread_mutex_lock(&one_phil->input_data->forks[one_phil->r_fork]);
 		pthread_mutex_lock(&one_phil->input_data->forks[one_phil->l_fork]);
 		print_message(one_phil, "took forks\n");
-		one_phil->numb_of_meal++;
 		print_message(one_phil, "\e[32m is eating\e[39m\n");
 		ft_usleep(one_phil->input_data->eating_time);
-		pthread_mutex_unlock(&one_phil->input_data->forks[one_phil->r_fork]);
 		pthread_mutex_unlock(&one_phil->input_data->forks[one_phil->l_fork]);
+		pthread_mutex_unlock(&one_phil->input_data->forks[one_phil->r_fork]);
+		one_phil->numb_of_meal++;
 	}
 	else
 	{
 		pthread_mutex_lock(&one_phil->input_data->forks[one_phil->l_fork]);
 		pthread_mutex_lock(&one_phil->input_data->forks[one_phil->r_fork]);
 		print_message(one_phil, "took forks\n");
-		one_phil->numb_of_meal++;
 		print_message(one_phil, "\e[32m is eating\e[39m\n");
 		ft_usleep(one_phil->input_data->eating_time);
 		pthread_mutex_unlock(&one_phil->input_data->forks[one_phil->r_fork]);
 		pthread_mutex_unlock(&one_phil->input_data->forks[one_phil->l_fork]);
+		one_phil->numb_of_meal++;
 	}
 	one_phil->death_time = get_time() + one_phil->input_data->time_to_die;
 }
@@ -51,21 +51,21 @@ int	ft_check_phil_condition(t_phil *one_phil)
 void	*ft_launching(void *one_of_philo)
 {
 	t_phil	*one_phil;
-	
+
 	one_phil = (t_phil *)one_of_philo;
 	one_phil->begin = get_time();
 	one_phil->death_time = get_time() + one_phil->input_data->time_to_die;
 	while (1)
 	{
 		if (ft_check_phil_condition(one_phil))
-			break;
+			break ;
 		phil_eat(one_phil);
 		if (ft_check_phil_condition(one_phil))
-			break;
+			break ;
 		print_message(one_phil, "is sleeping\n");
 		ft_usleep(one_phil->input_data->sleeping_time);
 		if (ft_check_phil_condition(one_phil))
-			break;
+			break ;
 		print_message(one_phil, "is thinking\n");
 	}
 	return (NULL);
@@ -88,9 +88,9 @@ int	create_threads(t_data *input_data)
 		if (pthread_detach(input_data->phil_thread[i]))
 			return (ft_str_error("Error! Thread was not detached\n"));
 	}
-	if (pthread_create(input_data->monitor_thread, NULL, \
+	if (pthread_create(&input_data->monitor_thread, NULL, \
 											ft_monitor, (void *)input_data))
-			return (ft_str_error("Error! Monitor_thread was not created\n"));
-	pthread_join(*input_data->monitor_thread, NULL);
+		return (ft_str_error("Error! Monitor_thread was not created\n"));
+	pthread_join(input_data->monitor_thread, NULL);
 	return (0);
 }
